@@ -90,12 +90,17 @@ function initializeMandatoryProblems(settings: GameSettings): void {
     const tempEmoji = "❓";
 
     if (relevantChallenge === ChallengeType.MULTIPLICATION && relevantNumericOption !== null) {
-        const factor1 = relevantNumericOption;
-        for (let factor2 = 0; factor2 <= LMAX; factor2++) {
+        let factorA = relevantNumericOption;
+        for (let factorB = 0; factorB <= LMAX; factorB++) {
+            let finalOperand1 = factorA;
+            let finalOperand2 = factorB;
+            if (Math.random() < 0.5) {
+                [finalOperand1, finalOperand2] = [finalOperand2, finalOperand1];
+            }
             problems.push({
-                id: tempId, operand1: factor1, operand2: factor2, answer: factor1 * factor2,
+                id: tempId, operand1: finalOperand1, operand2: finalOperand2, answer: factorA * factorB,
                 operation: OperationType.MULTIPLICATION, originalChallengeType: ChallengeType.MULTIPLICATION,
-                question: `${factor1} × ${factor2}`, visualEmoji: tempEmoji
+                question: `${finalOperand1} × ${finalOperand2}`, visualEmoji: tempEmoji
             });
         }
     } else if (relevantChallenge === ChallengeType.DIVISION && relevantNumericOption !== null) {
@@ -109,13 +114,18 @@ function initializeMandatoryProblems(settings: GameSettings): void {
             });
         }
     } else if (relevantChallenge === ChallengeType.ADDITION && relevantNumericOption !== null) {
-        const addendFixed = relevantNumericOption;
-        for (let addendVariable = 0; addendVariable <= LMAX; addendVariable++) {
-            if (addendFixed + addendVariable > CONFIG.MAX_ADDITION_SUM) continue;
+        let addendA = relevantNumericOption;
+        for (let addendB = 0; addendB <= LMAX; addendB++) {
+            if (addendA + addendB > CONFIG.MAX_ADDITION_SUM) continue;
+            let finalOperand1 = addendA;
+            let finalOperand2 = addendB;
+            if (Math.random() < 0.5) {
+                [finalOperand1, finalOperand2] = [finalOperand2, finalOperand1];
+            }
             problems.push({
-                id: tempId, operand1: addendFixed, operand2: addendVariable, answer: addendFixed + addendVariable,
+                id: tempId, operand1: finalOperand1, operand2: finalOperand2, answer: addendA + addendB,
                 operation: OperationType.ADDITION, originalChallengeType: ChallengeType.ADDITION,
-                question: `${addendFixed} + ${addendVariable}`, visualEmoji: tempEmoji
+                question: `${finalOperand1} + ${finalOperand2}`, visualEmoji: tempEmoji
             });
         }
     } else if (relevantChallenge === ChallengeType.SUBTRACTION && relevantNumericOption !== null) {
@@ -176,7 +186,7 @@ export const generateProblem = (settings: GameSettings, history: Problem[] = [])
   }
 
   // Normal random problem generation if mandatory list exhausted or not applicable, or beyond 20 questions
-  let operand1: number, operand2: number, answer: number;
+  let tempOp1: number, tempOp2: number, finalOperand1: number, finalOperand2: number, answer: number;
   let operation: OperationType;
   let question: string;
   let problemId: string;
@@ -200,95 +210,109 @@ export const generateProblem = (settings: GameSettings, history: Problem[] = [])
       operation = OperationType.MULTIPLICATION;
       const tableSelection = settings.multiplicationTable;
       if (tableSelection.includes('mixed') || tableSelection.length === 0) {
-        operand1 = getRandomInt(0, CONFIG.MAX_MULTIPLICATION_OPERAND);
+        tempOp1 = getRandomInt(0, CONFIG.MAX_MULTIPLICATION_OPERAND);
       } else {
-        operand1 = getRandomElement(tableSelection.filter(v => typeof v === 'number') as number[]) ?? getRandomInt(0, CONFIG.MAX_MULTIPLICATION_OPERAND);
+        tempOp1 = getRandomElement(tableSelection.filter(v => typeof v === 'number') as number[]) ?? getRandomInt(0, CONFIG.MAX_MULTIPLICATION_OPERAND);
       }
-      operand2 = getRandomInt(0, CONFIG.MAX_MULTIPLICATION_OPERAND);
-      answer = operand1 * operand2;
-      question = `${operand1} × ${operand2}`;
+      tempOp2 = getRandomInt(0, CONFIG.MAX_MULTIPLICATION_OPERAND);
+      answer = tempOp1 * tempOp2;
+      finalOperand1 = tempOp1;
+      finalOperand2 = tempOp2;
+      if (Math.random() < 0.5) {
+        [finalOperand1, finalOperand2] = [finalOperand2, finalOperand1];
+      }
+      question = `${finalOperand1} × ${finalOperand2}`;
 
     } else if (currentSelectedChallengeType === ChallengeType.DIVISION) {
       operation = OperationType.DIVISION;
       const divisorSelection = settings.divisionDivisor;
       if (divisorSelection.includes('mixed') || divisorSelection.length === 0) {
-        operand2 = getRandomInt(1, CONFIG.MAX_MULTIPLICATION_OPERAND);
+        tempOp2 = getRandomInt(1, CONFIG.MAX_MULTIPLICATION_OPERAND);
       } else {
-        operand2 = getRandomElement(divisorSelection.filter(v => typeof v === 'number') as number[]) ?? getRandomInt(1, CONFIG.MAX_MULTIPLICATION_OPERAND);
+        tempOp2 = getRandomElement(divisorSelection.filter(v => typeof v === 'number') as number[]) ?? getRandomInt(1, CONFIG.MAX_MULTIPLICATION_OPERAND);
       }
-      if (operand2 === 0) operand2 = 1;
+      if (tempOp2 === 0) tempOp2 = 1;
 
       answer = getRandomInt(0, CONFIG.MAX_MULTIPLICATION_OPERAND);
-      operand1 = answer * operand2;
-      // Ensure operand1 (dividend) doesn't become excessively large for division "by mixed"
-      if (operand1 > 144 && (divisorSelection.includes('mixed') || divisorSelection.length === 0)) {
-          operand1 = getRandomInt(0,12) * operand2; // Keep dividend smaller for mixed
-          answer = operand1 / operand2;
+      tempOp1 = answer * tempOp2;
+      // Ensure tempOp1 (dividend) doesn't become excessively large for division "by mixed"
+      if (tempOp1 > 144 && (divisorSelection.includes('mixed') || divisorSelection.length === 0)) {
+          tempOp1 = getRandomInt(0,12) * tempOp2; // Keep dividend smaller for mixed
+          answer = tempOp1 / tempOp2;
       }
-      question = `${operand1} ÷ ${operand2}`;
+      finalOperand1 = tempOp1; // For division, order is fixed
+      finalOperand2 = tempOp2;
+      question = `${finalOperand1} ÷ ${finalOperand2}`;
 
     } else if (currentSelectedChallengeType === ChallengeType.SUBTRACTION) {
       operation = OperationType.SUBTRACTION;
       const subtrahendSelection = settings.subtractionTable;
       if (subtrahendSelection.includes('mixed') || subtrahendSelection.length === 0) {
-        operand2 = getRandomInt(0, CONFIG.MAX_SUBTRAHEND);
+        tempOp2 = getRandomInt(0, CONFIG.MAX_SUBTRAHEND);
       } else {
-        operand2 = getRandomElement(subtrahendSelection.filter(v => typeof v === 'number') as number[]) ?? getRandomInt(0, CONFIG.MAX_SUBTRAHEND);
+        tempOp2 = getRandomElement(subtrahendSelection.filter(v => typeof v === 'number') as number[]) ?? getRandomInt(0, CONFIG.MAX_SUBTRAHEND);
       }
 
       answer = getRandomInt(0, CONFIG.MAX_SUBTRACTION_ANSWER);
-      operand1 = answer + operand2;
-      if (operand1 > CONFIG.MAX_ADDITION_SUM) {
-          operand1 = getRandomInt(operand2, CONFIG.MAX_ADDITION_SUM);
-          answer = operand1 - operand2;
+      tempOp1 = answer + tempOp2;
+      if (tempOp1 > CONFIG.MAX_ADDITION_SUM) {
+          tempOp1 = getRandomInt(tempOp2, CONFIG.MAX_ADDITION_SUM);
+          answer = tempOp1 - tempOp2;
           if (answer < 0) {
               answer = 0;
-              operand1 = operand2;
+              tempOp1 = tempOp2;
           }
       }
-      question = `${operand1} - ${operand2}`;
+      finalOperand1 = tempOp1; // For subtraction, order is fixed
+      finalOperand2 = tempOp2;
+      question = `${finalOperand1} - ${finalOperand2}`;
 
     } else if (currentSelectedChallengeType === ChallengeType.ADDITION) {
       operation = OperationType.ADDITION;
       const addend1Selection = settings.additionTable;
       if (addend1Selection.includes('mixed') || addend1Selection.length === 0) {
-        operand1 = getRandomInt(0, CONFIG.MAX_ADDITION_OPERAND);
+        tempOp1 = getRandomInt(0, CONFIG.MAX_ADDITION_OPERAND);
       } else {
-        operand1 = getRandomElement(addend1Selection.filter(v => typeof v === 'number') as number[]) ?? getRandomInt(0, CONFIG.MAX_ADDITION_OPERAND);
+        tempOp1 = getRandomElement(addend1Selection.filter(v => typeof v === 'number') as number[]) ?? getRandomInt(0, CONFIG.MAX_ADDITION_OPERAND);
       }
 
-      const maxPossibleOperand2 = CONFIG.MAX_ADDITION_SUM - operand1;
-      operand2 = getRandomInt(0, Math.min(CONFIG.MAX_ADDITION_OPERAND, Math.max(0, maxPossibleOperand2)));
+      const maxPossibleOperand2 = CONFIG.MAX_ADDITION_SUM - tempOp1;
+      tempOp2 = getRandomInt(0, Math.min(CONFIG.MAX_ADDITION_OPERAND, Math.max(0, maxPossibleOperand2)));
 
-      answer = operand1 + operand2;
-      question = `${operand1} + ${operand2}`;
+      answer = tempOp1 + tempOp2;
+      finalOperand1 = tempOp1;
+      finalOperand2 = tempOp2;
+      if (Math.random() < 0.5) {
+        [finalOperand1, finalOperand2] = [finalOperand2, finalOperand1];
+      }
+      question = `${finalOperand1} + ${finalOperand2}`;
 
     } else if (currentSelectedChallengeType === ChallengeType.DOUBLES) {
       operation = OperationType.MULTIPLICATION;
-      operand1 = getRandomInt(0, CONFIG.DOUBLES_HALVES_LEARNING_MAX_INPUT);
-      operand2 = 2;
-      answer = operand1 * 2;
-      question = `Double of ${operand1}`;
+      finalOperand1 = getRandomInt(0, CONFIG.DOUBLES_HALVES_LEARNING_MAX_INPUT); // This is the number being doubled
+      finalOperand2 = 2; // Implicit operand
+      answer = finalOperand1 * 2;
+      question = `Double of ${finalOperand1}`;
 
     } else { // HALVES (must be the last one, ChallengeType.HALVES)
       operation = OperationType.DIVISION;
       answer = getRandomInt(0, CONFIG.DOUBLES_HALVES_LEARNING_MAX_INPUT);
-      operand1 = answer * 2;
-      operand2 = 2;
-      question = `Half of ${operand1}`;
+      finalOperand1 = answer * 2; // This is the number being halved
+      finalOperand2 = 2; // Implicit operand
+      question = `Half of ${finalOperand1}`;
     }
     attempts++;
   } while (
     (history.length > 0 &&
-     history[history.length - 1].operand1 === operand1 &&
-     history[history.length - 1].operand2 === operand2 &&
+     history[history.length - 1].operand1 === finalOperand1 &&
+     history[history.length - 1].operand2 === finalOperand2 &&
      history[history.length - 1].operation === operation) &&
     attempts < CONFIG.PROBLEM_GENERATION_MAX_REPETITION_ATTEMPTS
   );
 
   const visualEmoji = CONFIG.EMOJI_ARRAY_ITEMS[getRandomInt(0, CONFIG.EMOJI_ARRAY_ITEMS.length - 1)];
 
-  return { id: problemId, operand1, operand2, answer, operation, originalChallengeType, question, visualEmoji };
+  return { id: problemId, operand1: finalOperand1, operand2: finalOperand2, answer, operation, originalChallengeType, question, visualEmoji };
 };
 
 export const evaluateAnswer = (problem: Problem, userAnswer: number): boolean => {
@@ -375,7 +399,7 @@ export const generateProblemForLearningStep = (
   specificOption: number | 'mixed',
   stepNumber: number
 ): { problem: Problem; tip: string | null } => {
-  let operand1 = 0, operand2 = 0, answer = 0;
+  let tempOp1 = 0, tempOp2 = 0, finalOperand1 = 0, finalOperand2 = 0, answer = 0;
   let operation: OperationType = OperationType.ADDITION;
   let question = "";
   const problemId = `learn-${challengeType}-${specificOption}-${stepNumber}`; // Deterministic ID
@@ -387,14 +411,19 @@ export const generateProblemForLearningStep = (
     case ChallengeType.MULTIPLICATION:
       operation = OperationType.MULTIPLICATION;
       if (specificOption === 'mixed') {
-        operand1 = Math.floor(stepNumber / (LMAX + 1));
-        operand2 = stepNumber % (LMAX + 1);
+        tempOp1 = Math.floor(stepNumber / (LMAX + 1));
+        tempOp2 = stepNumber % (LMAX + 1);
       } else {
-        operand1 = specificOption as number;
-        operand2 = stepNumber;
+        tempOp1 = specificOption as number;
+        tempOp2 = stepNumber;
       }
-      answer = operand1 * operand2;
-      question = `${operand1} × ${operand2}`;
+      answer = tempOp1 * tempOp2;
+      finalOperand1 = tempOp1;
+      finalOperand2 = tempOp2;
+      if (Math.random() < 0.5) {
+        [finalOperand1, finalOperand2] = [finalOperand2, finalOperand1];
+      }
+      question = `${finalOperand1} × ${finalOperand2}`;
       break;
 
     case ChallengeType.DIVISION:
@@ -402,22 +431,24 @@ export const generateProblemForLearningStep = (
       if (specificOption === 'mixed') {
         // Iterate through divisors 1-12 first, then results 0-12 for each divisor
         const numDivisorsToCycle = LMAX; // 1 to 12
-        operand2 = (stepNumber % numDivisorsToCycle) + 1; // Divisor from 1 to 12
+        tempOp2 = (stepNumber % numDivisorsToCycle) + 1; // Divisor from 1 to 12
         answer = Math.floor(stepNumber / numDivisorsToCycle); // Result from 0 up to LMAX
         if (answer > LMAX) { // Cap result if stepNumber is too large
             answer = LMAX;
-            // Recalculate operand2 to ensure it's valid if answer was capped, though this scenario implies stepNumber exceeds totalSteps
-            operand2 = ( (stepNumber - (LMAX * numDivisorsToCycle) ) % numDivisorsToCycle) +1;
-             if(operand2 > LMAX) operand2 = LMAX; // ensure valid divisor
+            // Recalculate tempOp2 to ensure it's valid if answer was capped
+            tempOp2 = ( (stepNumber - (LMAX * numDivisorsToCycle) ) % numDivisorsToCycle) +1;
+             if(tempOp2 > LMAX) tempOp2 = LMAX; // ensure valid divisor
         }
 
       } else {
-        operand2 = specificOption as number;
-        if (operand2 === 0) operand2 = 1;
+        tempOp2 = specificOption as number;
+        if (tempOp2 === 0) tempOp2 = 1; // Avoid division by zero
         answer = stepNumber;
       }
-      operand1 = answer * operand2;
-      question = `${operand1} ÷ ${operand2}`;
+      tempOp1 = answer * tempOp2;
+      finalOperand1 = tempOp1; // Order is fixed for division display
+      finalOperand2 = tempOp2;
+      question = `${finalOperand1} ÷ ${finalOperand2}`;
       break;
 
     case ChallengeType.SUBTRACTION:
@@ -425,81 +456,86 @@ export const generateProblemForLearningStep = (
       if (specificOption === 'mixed') {
          // Cycle through results (0-LMAX) for each subtrahend (0-LMAX)
         const numSubtrahendsToCycle = CONFIG.MAX_SUBTRAHEND +1; // 0 to MAX_SUBTRAHEND
-        operand2 = stepNumber % numSubtrahendsToCycle; // Subtrahend
+        tempOp2 = stepNumber % numSubtrahendsToCycle; // Subtrahend
         answer = Math.floor(stepNumber / numSubtrahendsToCycle); // Result
         if (answer > CONFIG.MAX_SUBTRACTION_ANSWER) answer = CONFIG.MAX_SUBTRACTION_ANSWER;
-
-
       } else {
-        operand2 = specificOption as number;
+        tempOp2 = specificOption as number;
         answer = stepNumber;
       }
-      operand1 = answer + operand2;
+      tempOp1 = answer + tempOp2;
       // Ensure minuend and answer adhere to overall limits for this step
-      if (operand1 > CONFIG.MAX_ADDITION_SUM) {
-          operand1 = CONFIG.MAX_ADDITION_SUM;
-          answer = operand1 - operand2;
-          if (answer < 0) { answer = 0; operand1 = operand2; }
+      if (tempOp1 > CONFIG.MAX_ADDITION_SUM) {
+          tempOp1 = CONFIG.MAX_ADDITION_SUM;
+          answer = tempOp1 - tempOp2;
+          if (answer < 0) { answer = 0; tempOp1 = tempOp2; }
       }
       if (answer < 0) { // Recalculate if answer became negative
           answer = 0;
-          operand1 = operand2;
+          tempOp1 = tempOp2;
       }
-      question = `${operand1} - ${operand2}`;
+      finalOperand1 = tempOp1; // Order is fixed for subtraction display
+      finalOperand2 = tempOp2;
+      question = `${finalOperand1} - ${finalOperand2}`;
       break;
 
     case ChallengeType.ADDITION:
       operation = OperationType.ADDITION;
       if (specificOption === 'mixed') {
-        // Cycle through addend2 (0-LMAX) for each addend1 (0-LMAX)
-        operand1 = Math.floor(stepNumber / (LMAX + 1));
-        operand2 = stepNumber % (LMAX + 1);
+        // Cycle through tempOp2 (0-LMAX) for each tempOp1 (0-LMAX)
+        tempOp1 = Math.floor(stepNumber / (LMAX + 1));
+        tempOp2 = stepNumber % (LMAX + 1);
       } else {
-        operand1 = specificOption as number;
-        operand2 = stepNumber;
+        tempOp1 = specificOption as number;
+        tempOp2 = stepNumber;
       }
-      answer = operand1 + operand2;
+      answer = tempOp1 + tempOp2;
       if (answer > CONFIG.MAX_ADDITION_SUM) {
           answer = CONFIG.MAX_ADDITION_SUM;
           // Adjust one of the operands if sum is capped
-          if (operand1 === (specificOption === 'mixed' ? Math.floor(stepNumber / (LMAX + 1)) : specificOption as number) ) { // if op1 was the "primary"
-             operand2 = answer - operand1;
-             if(operand2 < 0) { // if op2 becomes negative, reset op1 and op2
-                operand1 = Math.floor(CONFIG.MAX_ADDITION_SUM / 2);
-                operand2 = CONFIG.MAX_ADDITION_SUM - operand1;
-                answer = operand1 + operand2;
+          if (tempOp1 === (specificOption === 'mixed' ? Math.floor(stepNumber / (LMAX + 1)) : specificOption as number) ) { 
+             tempOp2 = answer - tempOp1;
+             if(tempOp2 < 0) { 
+                tempOp1 = Math.floor(CONFIG.MAX_ADDITION_SUM / 2);
+                tempOp2 = CONFIG.MAX_ADDITION_SUM - tempOp1;
+                answer = tempOp1 + tempOp2;
              }
-          } else { // op2 was "primary"
-             operand1 = answer - operand2;
-              if(operand1 < 0) {
-                operand2 = Math.floor(CONFIG.MAX_ADDITION_SUM / 2);
-                operand1 = CONFIG.MAX_ADDITION_SUM - operand2;
-                answer = operand1 + operand2;
+          } else { 
+             tempOp1 = answer - tempOp2;
+              if(tempOp1 < 0) {
+                tempOp2 = Math.floor(CONFIG.MAX_ADDITION_SUM / 2);
+                tempOp1 = CONFIG.MAX_ADDITION_SUM - tempOp2;
+                answer = tempOp1 + tempOp2;
               }
           }
       }
-      question = `${operand1} + ${operand2}`;
+      finalOperand1 = tempOp1;
+      finalOperand2 = tempOp2;
+      if (Math.random() < 0.5) {
+        [finalOperand1, finalOperand2] = [finalOperand2, finalOperand1];
+      }
+      question = `${finalOperand1} + ${finalOperand2}`;
       break;
 
     case ChallengeType.DOUBLES:
       operation = OperationType.MULTIPLICATION;
-      operand1 = stepNumber;
-      operand2 = 2;
-      answer = operand1 * 2;
-      question = `Double of ${operand1}`;
+      finalOperand1 = stepNumber; // This is the number being doubled
+      finalOperand2 = 2; // Implicit operand for display/logic if needed, but question is specific
+      answer = finalOperand1 * 2;
+      question = `Double of ${finalOperand1}`;
       break;
 
     case ChallengeType.HALVES:
       operation = OperationType.DIVISION;
       answer = stepNumber;
-      operand1 = answer * 2;
-      operand2 = 2;
-      question = `Half of ${operand1}`;
+      finalOperand1 = answer * 2; // This is the number being halved
+      finalOperand2 = 2; // Implicit operand
+      question = `Half of ${finalOperand1}`;
       break;
   }
 
   const visualEmoji = CONFIG.EMOJI_ARRAY_ITEMS[getRandomInt(0, CONFIG.EMOJI_ARRAY_ITEMS.length - 1)];
-  const problem: Problem = { id: problemId, operand1, operand2, answer, operation, originalChallengeType, question, visualEmoji };
+  const problem: Problem = { id: problemId, operand1: finalOperand1, operand2: finalOperand2, answer, operation, originalChallengeType, question, visualEmoji };
   const tip = getTipForProblem(problem, specificOption === 'mixed' && stepNumber < 3);
 
   return { problem, tip };
@@ -524,29 +560,35 @@ export const getTipForProblem = (problem: Problem, isFirstFewMixedSteps: boolean
   }
   if (!tipsForOperation) return null;
 
-  if ((operation === OperationType.MULTIPLICATION || operation === OperationType.ADDITION) && (operand1 === 0 || operand2 === 0)) {
+  // For multiplication and addition, we use the actual operands from the problem for tips,
+  // as their order might have been swapped for the question.
+  const actualOp1 = problem.operand1;
+  const actualOp2 = problem.operand2;
+
+
+  if ((operation === OperationType.MULTIPLICATION || operation === OperationType.ADDITION) && (actualOp1 === 0 || actualOp2 === 0)) {
     const key = operation === OperationType.MULTIPLICATION ? 'BY_ZERO' : 'WITH_ZERO';
     if (tipsForOperation[key] && typeof tipsForOperation[key] === 'function') {
-      return (tipsForOperation[key] as Function)(operand1, operand2);
+      return (tipsForOperation[key] as Function)(actualOp1, actualOp2);
     }
   }
   if (operation === OperationType.MULTIPLICATION) {
-    if (operand1 === 1 || operand2 === 1) return (tipsForOperation.BY_ONE as Function)(operand1, operand2);
-    if (operand1 === 2 || operand2 === 2) return (tipsForOperation.BY_TWO as Function)(operand1, operand2);
-    if (operand1 === 10 || operand2 === 10) return (tipsForOperation.BY_TEN as Function)(operand1, operand2);
-    if (operand1 !== operand2 && operand1 > 1 && operand2 > 1 && tipsForOperation.COMMUTATIVE) return (tipsForOperation.COMMUTATIVE as Function)(operand1, operand2);
+    if (actualOp1 === 1 || actualOp2 === 1) return (tipsForOperation.BY_ONE as Function)(actualOp1, actualOp2);
+    if (actualOp1 === 2 || actualOp2 === 2) return (tipsForOperation.BY_TWO as Function)(actualOp1, actualOp2);
+    if (actualOp1 === 10 || actualOp2 === 10) return (tipsForOperation.BY_TEN as Function)(actualOp1, actualOp2);
+    if (actualOp1 !== actualOp2 && actualOp1 > 1 && actualOp2 > 1 && tipsForOperation.COMMUTATIVE) return (tipsForOperation.COMMUTATIVE as Function)(actualOp1, actualOp2);
   }
-  if (operation === OperationType.DIVISION) {
+  if (operation === OperationType.DIVISION) { // For division, operand1 and operand2 retain their meaning (dividend, divisor)
     if (operand1 === 0 && operand2 !== 0) return (tipsForOperation.DIVIDING_ZERO as Function)(operand1, operand2);
     if (operand2 === 1) return (tipsForOperation.BY_ONE as Function)(operand1, operand2);
     if (operand1 !== 0 && operand1 === operand2) return (tipsForOperation.SELF_DIVISION as Function)(operand1, operand2);
     if (tipsForOperation.RELATE_TO_MULTIPLICATION) return (tipsForOperation.RELATE_TO_MULTIPLICATION as Function)(operand1, operand2);
   }
   if (operation === OperationType.ADDITION) {
-     if (operand1 !== operand2 && tipsForOperation.COMMUTATIVE) return (tipsForOperation.COMMUTATIVE as Function)(operand1, operand2);
-     if (Math.min(operand1, operand2) > 0 && Math.min(operand1, operand2) <= 4 && tipsForOperation.COUNT_ON) return (tipsForOperation.COUNT_ON as Function)(operand1, operand2);
+     if (actualOp1 !== actualOp2 && tipsForOperation.COMMUTATIVE) return (tipsForOperation.COMMUTATIVE as Function)(actualOp1, actualOp2);
+     if (Math.min(actualOp1, actualOp2) > 0 && Math.min(actualOp1, actualOp2) <= 4 && tipsForOperation.COUNT_ON) return (tipsForOperation.COUNT_ON as Function)(actualOp1, actualOp2);
   }
-  if (operation === OperationType.SUBTRACTION) {
+  if (operation === OperationType.SUBTRACTION) { // For subtraction, operand1 and operand2 retain their meaning (minuend, subtrahend)
     if (operand2 === 0) return (tipsForOperation.WITH_ZERO as Function)(operand1, operand2);
     if (operand1 === operand2) return (tipsForOperation.SUBTRACTING_SELF as Function)(operand1, operand2);
     if (operand2 > 0 && operand2 <= 4 && tipsForOperation.COUNT_BACK) return (tipsForOperation.COUNT_BACK as Function)(operand1, operand2);
@@ -554,5 +596,9 @@ export const getTipForProblem = (problem: Problem, isFirstFewMixedSteps: boolean
   }
 
   const defaultTip = tipsForOperation.DEFAULT;
+  // Use actualOp1 and actualOp2 for default tips if they are multiplication/addition
+  if (operation === OperationType.MULTIPLICATION || operation === OperationType.ADDITION) {
+    return typeof defaultTip === 'function' ? defaultTip(actualOp1, actualOp2) : defaultTip || null;
+  }
   return typeof defaultTip === 'function' ? defaultTip(operand1, operand2) : defaultTip || null;
 };
